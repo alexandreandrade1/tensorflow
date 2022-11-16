@@ -1269,6 +1269,30 @@ class ShapeTensorTest(test_util.TensorFlowTestCase):
     shape = tensor_shape.TensorShape([1, tensor_shape.Dimension(2)])
     shape_tensor = tensor_util.shape_tensor(shape)
     self.assertAllEqual((1, 2), shape_tensor)
+ def testIntNDefaultType(self):
+    t = tensor_util.make_tensor_proto([10, 20, 30, 40], shape=[2, 2])
+    if sys.byteorder == "big":
+      self.assertProtoEquals(r"""
+        dtype: DT_INT32
+        tensor_shape { dim { size: 2 } dim { size: 2 } }
+        tensor_content: "\000\000\000\n\000\000\000\024\000\000\000\036\000\000\000("
+        """, t)
+    else:
+      self.assertProtoEquals(r"""
+        dtype: DT_INT32
+        tensor_shape { dim { size: 2 } dim { size: 2 } }
+        tensor_content: "\n\000\000\000\024\000\000\000\036\000\000\000(\000\000\000"
+        """, t)
+    a = tensor_util.MakeNdarray(t)
+    self.assertEqual(np.int32, a.dtype)
+    self.assertAllClose(np.array([[10, 20], [30, 40]], dtype=np.int32), a)
+
+  @parameterized.named_parameters(
+      ("_int8", dtypes.int8, np.int8), ("_int16", dtypes.int16, np.int16),
+      ("_int32", dtypes.int32, np.int32), ("_int64", dtypes.int64, np.int64),
+      ("_uint8", dtypes.uint8, np.uint8), ("_uint16", dtypes.uint16, np.uint16),
+      ("_uint32", dtypes.uint32, np.uint32),
+      ("_uint64", dtypes.uint64, np.uint64))
 
 
 if __name__ == "__main__":
